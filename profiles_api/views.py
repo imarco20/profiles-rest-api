@@ -4,13 +4,15 @@ from rest_framework.response import Response
 from rest_framework import status
 from profiles_api import serializers
 from rest_framework import viewsets
+from profiles_api import models
+
 
 # Create your views here.
 class HelloApiView(APIView):
     """Test API View"""
     serializer_class = serializers.HelloSerializer
 
-    def get(self, request, format = None):
+    def get(self, request, format=None):
         """Returns a list of APIView features"""
         an_apiview = [
             'Uses HTTP methods as function (get, post, pathc, put, delete)',
@@ -23,7 +25,7 @@ class HelloApiView(APIView):
 
     def post(self, request):
         """Create a hello message with our name"""
-        serializer = self.serializer_class(data = request.data)
+        serializer = self.serializer_class(data=request.data)
 
         if serializer.is_valid():
             name = serializer.validated_data.get('name')
@@ -32,21 +34,21 @@ class HelloApiView(APIView):
 
         else:
             return Response(
-                serializer.errors, status = status.HTTP_400_BAD_REQUEST
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
-    
-    def put(self, request, pk = None):
+
+    def put(self, request, pk=None):
         """Handle updating an object"""
 
         return Response({'method': 'PUT'})
-    
-    def patch(self, request, pk = None):
+
+    def patch(self, request, pk=None):
         """Handle a partial update of an object"""
         return Response({'method': 'PATCH'})
 
-    def delete(self, request, pk = None):
+    def delete(self, request, pk=None):
         """Delete an object"""
-        return Response({'method' : 'DELETE'})
+        return Response({'method': 'DELETE'})
 
 
 class HelloViewSet(viewsets.ViewSet):
@@ -63,7 +65,7 @@ class HelloViewSet(viewsets.ViewSet):
             'Provides more functionality with less code',
         ]
 
-        return Response({'message': 'Hello!', 'a_viewset' : a_viewset})
+        return Response({'message': 'Hello!', 'a_viewset': a_viewset})
 
     def create(self, request):
         """Create a new hello message"""
@@ -74,29 +76,62 @@ class HelloViewSet(viewsets.ViewSet):
             name = serializer.validated_data.get('name')
             message = f'Hello {name}!'
 
-            return Response({'message' : message})
+            return Response({'message': message})
 
         else:
             return Response(
                 serializer.errors,
-                status = status.HTTP_400_BAD_REQUEST
-                )
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-    def retrieve(self, request, pk = None):
+    def retrieve(self, request, pk=None):
         """Handle getting an object by its ID"""
         return Response({'http_method': 'GET'})
 
-    def update(Self, request, pk = None):
+    def update(Self, request, pk=None):
         """Handle updating an object"""
-        return Response({'http_method' : 'PUT'})
+        return Response({'http_method': 'PUT'})
 
-    def pratial_update(self, request, pk = None):
+    def pratial_update(self, request, pk=None):
         """Handle updating part of an object"""
         return Response({"http_method": 'PATCH'})
 
-    def destroy(self, request, pk = None):
+    def destroy(self, request, pk=None):
         """handle removing an object"""
         return Response({"http_method": "DELETE"})
 
-        
 
+class UserProfileViewSet(viewsets.ModelViewSet):
+    """Handle creating and updating profiles"""
+
+    serializer_class = serializers.UserProfileSerializer
+    queryset = models.UserProfile.objects.all()
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (permissions.UpdateOwnProfile,)
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name', 'email',)
+
+
+class LoginViewSet(viewsets.ViewSet):
+    """Checks email and password and returns an auth token."""
+
+    serializer_class = AuthTokenSerializer
+
+    def create(self, request):
+        """Use the ObtainAuthToken APIView to validate and create a token."""
+
+        return ObtainAuthToken().post(request)
+
+
+class UserProfileFeedViewSet(viewsets.ModelViewSet):
+    """Handles creating, reading and updating profile feed items."""
+
+    authentication_classes = (TokenAuthentication,)
+    serializer_class = serializers.ProfileFeedItemSerializer
+    queryset = models.ProfileFeedItem.objects.all()
+    permission_classes = (permissions.PostOwnStatus, IsAuthenticated)
+
+    def perform_create(self, serializer):
+        """Sets the user profile to the logged in user."""
+
+        serializer.save(user_profile=self.request.user)
