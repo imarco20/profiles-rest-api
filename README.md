@@ -1,5 +1,5 @@
 # Profiles REST API
 
-Profiles REST API course code.
+A RESTful Web Service that provide basic functionality for managing user profiles, developed using Django and Django Rest Framework.
 
 ```
